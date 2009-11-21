@@ -1,0 +1,22 @@
+# Copyright (c) 2009 Benoy R Nair. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file
+
+GODBC
+Use "godbc" to connect to any database (that supports ODBC interface) using Go.
+
+Prerequisites
+Requires unixODBC (godbc makes use of libodbc)
+http://www.unixodbc.org/
+
+Sample Program
+A sample go file (example.go) using godbc is provided along with.
+
+The program does the following:
+1. Lists the data sources registered in the system
+2. Lists the drivers installed
+
+Todo
+1. Extend the go library to cover the entire ODBC specification.
+2. Check for multi threading support.
+3. Prepare detailed documentation.
