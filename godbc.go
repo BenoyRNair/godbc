@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
+ * 22-Nov-09 Benoy R Nair	First draft
+ * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
+ */
 package godbc 
 
 /*
@@ -30,6 +34,18 @@ const
 	GS_FETCH_FIRST = 2;
 	GS_FETCH_NEXT = 1;
 	GS_SUCCESS_WITH_INFO = 1;
+
+// Handle type identifiers
+	GS_HANDLE_ENV = 1;
+	GS_HANDLE_DBC = 2;
+	GS_HANDLE_STMT = 3;
+	GS_HANDLE_DESC = 4;
+
+// Options for GS_DriverConnect
+	GS_DRIVER_NOPROMPT = 0;
+	GS_DRIVER_COMPLETE = 1;
+	GS_DRIVER_PROMPT = 2;
+	GS_DRIVER_COMPLETE_REQUIRED = 3;
 
 	BUFFER_SIZE = 256;
 )
@@ -113,6 +129,30 @@ func ( environmentHandle * GS_HANDLE ) GS_Drivers ( direction int )
 	C.free ( unsafe.Pointer ( attr ) );
 
 	return returnInt, retDriver, retAttr;
+}
+
+func ( connectionHandle * GS_HANDLE ) GS_DriverConnect ( windowHandle int
+	, inConnection string
+	, driverCompletion int )
+	( int, string )
+{
+	var stringLength2 C.SQLSMALLINT;
+	outConnectionString := ( * C.SQLCHAR ) ( C.calloc ( BUFFER_SIZE, 1 ) );
+
+	returnInt := int ( C.GO_DriverConnect ( unsafe.Pointer ( connectionHandle.GsHandle )
+		, C.int ( windowHandle )
+		, C.CString ( inConnection )
+		, C.SQLSMALLINT ( len ( inConnection ) )
+		, outConnectionString
+		, BUFFER_SIZE
+		, &stringLength2
+		, C.SQLUSMALLINT ( driverCompletion ) ) );
+
+	retOutConnectionString := toStringByLength ( outConnectionString, int ( stringLength2 ) );
+
+	C.free ( unsafe.Pointer ( outConnectionString ) );
+
+	return returnInt, retOutConnectionString;
 }
 
 func toStringByLength ( buf * C.SQLCHAR, length int )

@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+/*
+ * 22-Nov-09 Benoy R Nair	First draft
+ * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
+ */
 #include "cgodbc.h"
-
-#include <stdio.h>
 
 int GO_SetEnvAttr ( SQLHANDLE environmentHandle
 	, SQLINTEGER attribute
@@ -15,4 +17,23 @@ int GO_SetEnvAttr ( SQLHANDLE environmentHandle
 		, attribute
 		, ( SQLPOINTER ) value
 		, stringLength ) );
+}
+
+int GO_DriverConnect ( SQLHANDLE connectionHandle
+	, int windowHandle
+	, char * inConnectionString
+	, SQLSMALLINT stringLength1
+	, SQLCHAR * outConnectionString
+	, SQLSMALLINT bufferLength
+	, SQLSMALLINT * stringLength2Ptr
+	, SQLUSMALLINT driverCompletion )
+{
+	return ( SQLDriverConnect ( ( SQLHDBC ) connectionHandle
+		, ( SQLHWND ) windowHandle
+		, ( SQLCHAR * ) inConnectionString
+		, stringLength1
+		, outConnectionString
+		, bufferLength
+		, stringLength2Ptr
+		, driverCompletion ) );
 }

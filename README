@@ -15,6 +15,7 @@ A sample go file (example.go) using godbc is provided along with.
 The program does the following:
 1. Lists the data sources registered in the system
 2. Lists the drivers installed
+3. Connect to a data source
 
 Todo
 1. Extend the go library to cover the entire ODBC specification.
