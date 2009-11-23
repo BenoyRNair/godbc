@@ -5,6 +5,7 @@
 /*
  * 22-Nov-09 Benoy R Nair	First draft
  * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
+ * 23-Nov-09 Benoy R Nair	For SQLGetInfo()
  */
 #ifndef _CGODBC_H_
 #define _CGODBC_H_
@@ -26,4 +27,18 @@ int GO_DriverConnect ( SQLHANDLE connectionHandle
 	, SQLSMALLINT bufferLength
 	, SQLSMALLINT * stringLength2Ptr
 	, SQLUSMALLINT driverCompletion );
+
+int GO_GetInfo_String ( SQLHANDLE connectionHandle
+	, SQLUSMALLINT infoType
+	, SQLCHAR * infoValue
+	, SQLSMALLINT bufferLength
+	, SQLSMALLINT * stringLength );
+
+int GO_GetInfo_Uint ( SQLHANDLE connectionHandle
+	, SQLUSMALLINT infoType
+	, SQLUSMALLINT * infoValue );
+
+int GO_GetInfo_Int ( SQLHANDLE connectionHandle
+	, SQLUSMALLINT infoType
+	, SQLSMALLINT * infoValue );
 #endif

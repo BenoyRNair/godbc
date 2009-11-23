@@ -5,6 +5,7 @@
 /*
  * 22-Nov-09 Benoy R Nair	First draft
  * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
+ * 23-Nov-09 Benoy R Nair	For SQLGetInfo()
  */
 #include "cgodbc.h"
 
@@ -36,4 +37,39 @@ int GO_DriverConnect ( SQLHANDLE connectionHandle
 		, bufferLength
 		, stringLength2Ptr
 		, driverCompletion ) );
+}
+
+int GO_GetInfo_String ( SQLHANDLE connectionHandle
+	, SQLUSMALLINT infoType
+	, SQLCHAR * infoValue
+	, SQLSMALLINT bufferLength
+	, SQLSMALLINT * stringLength )
+{
+	return ( SQLGetInfo ( ( SQLHDBC ) connectionHandle
+		, infoType
+		, ( SQLPOINTER ) infoValue
+		, bufferLength
+		, stringLength ) );
+}
+
+int GO_GetInfo_Uint ( SQLHANDLE connectionHandle
+	, SQLUSMALLINT infoType
+	, SQLUSMALLINT * infoValue )
+{
+	return ( SQLGetInfo ( ( SQLHDBC ) connectionHandle
+		, infoType
+		, ( SQLPOINTER ) infoValue
+		, 0
+		, 0 ) );
+}
+
+int GO_GetInfo_Int ( SQLHANDLE connectionHandle
+	, SQLUSMALLINT infoType
+	, SQLSMALLINT * infoValue )
+{
+	return ( SQLGetInfo ( ( SQLHDBC ) connectionHandle
+		, infoType
+		, ( SQLPOINTER ) infoValue
+		, 0
+		, 0 ) );
 }

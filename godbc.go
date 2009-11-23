@@ -5,6 +5,7 @@
 /*
  * 22-Nov-09 Benoy R Nair	First draft
  * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
+ * 23-Nov-09 Benoy R Nair	For SQLGetDiagRec(), SQLGetInfo()
  */
 package godbc 
 
@@ -47,6 +48,16 @@ const
 	GS_DRIVER_PROMPT = 2;
 	GS_DRIVER_COMPLETE_REQUIRED = 3;
 
+// Options for GS_GetInfo
+	GS_MAX_CONCURRENT_ACTIVITIES = 1;
+	GS_DBMS_NAME = 17;
+	GS_DBMS_VER = 18;
+	GS_GETDATA_EXTENSIONS = 81;
+
+// GS_GETDATA_EXTENSIONS bitmasks
+	GS_GD_ANY_COLUMN = uint32 ( 1 );
+	GS_GD_ANY_ORDER = uint32 ( 2 );
+
 	BUFFER_SIZE = 256;
 )
 
@@ -55,8 +66,8 @@ var
 	NULL_HANDLE GS_HANDLE;
 )
 
-func ( outputHandle * GS_HANDLE ) GS_AllocHandle ( handleType int
-	, inputHandle GS_HANDLE )
+func ( inputHandle * GS_HANDLE ) GS_AllocHandle ( handleType int
+	, outputHandle * GS_HANDLE )
 	int
 {
 	return ( int ( C.SQLAllocHandle ( C.SQLSMALLINT ( handleType )
@@ -153,6 +164,76 @@ func ( connectionHandle * GS_HANDLE ) GS_DriverConnect ( windowHandle int
 	C.free ( unsafe.Pointer ( outConnectionString ) );
 
 	return returnInt, retOutConnectionString;
+}
+
+func ( handle * GS_HANDLE ) GS_GetDiagRec ( handleType int
+	, recNumber int )
+	( int, string, int, string )
+{
+	sqlState := ( * C.SQLCHAR ) ( C.calloc ( BUFFER_SIZE, 1 ) );
+	var nativeError C.SQLINTEGER;
+	messageText := ( * C.SQLCHAR ) ( C.calloc ( BUFFER_SIZE, 1 ) );
+	var textLength C.SQLSMALLINT;
+
+	returnInt := int ( C.SQLGetDiagRec ( C.SQLSMALLINT ( handleType )
+		, unsafe.Pointer ( handle.GsHandle )
+		, C.SQLSMALLINT ( recNumber )
+		, sqlState
+		, &nativeError
+		, messageText
+		, BUFFER_SIZE
+		, &textLength ) );
+
+	C.free ( unsafe.Pointer ( sqlState ) );
+	C.free ( unsafe.Pointer ( messageText ) );
+
+	sqlStateString := toStringTillNull ( sqlState );
+	messageTextString := toStringByLength ( messageText, int ( textLength ) );
+
+	return returnInt, sqlStateString, int ( nativeError ), messageTextString;
+}
+
+func ( connectionHandle * GS_HANDLE ) GS_GetInfo_String ( infoType int )
+	( int, string )
+{
+	stringValue := ( * C.SQLCHAR ) ( C.calloc ( BUFFER_SIZE, 1 ) );
+	var length C.SQLSMALLINT;
+
+	returnInt := int ( C.GO_GetInfo_String ( unsafe.Pointer ( connectionHandle.GsHandle )
+		, C.SQLUSMALLINT ( infoType )
+		, stringValue
+		, BUFFER_SIZE
+		, &length ) );
+
+	returnString := toStringByLength ( stringValue, int ( length ) );
+
+	C.free ( unsafe.Pointer ( stringValue ) );
+
+	return returnInt, returnString;
+}
+
+func ( connectionHandle * GS_HANDLE ) GS_GetInfo_Uint ( infoType int )
+	( int, uint32 )
+{
+	var intValue C.SQLUSMALLINT;
+
+	returnInt := int ( C.GO_GetInfo_Uint ( unsafe.Pointer ( connectionHandle.GsHandle )
+		, C.SQLUSMALLINT ( infoType )
+		, &intValue ) );
+
+	return returnInt, uint32 ( intValue );
+}
+
+func ( connectionHandle * GS_HANDLE ) GS_GetInfo_Int ( infoType int )
+	( int, int )
+{
+	var intValue C.SQLSMALLINT;
+
+	returnInt := int ( C.GO_GetInfo_Int ( unsafe.Pointer ( connectionHandle.GsHandle )
+		, C.SQLUSMALLINT ( infoType )
+		, &intValue ) );
+
+	return returnInt, int ( intValue );
 }
 
 func toStringByLength ( buf * C.SQLCHAR, length int )
