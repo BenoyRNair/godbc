@@ -6,6 +6,7 @@
  * 22-Nov-09 Benoy R Nair	First draft
  * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
  * 23-Nov-09 Benoy R Nair	For SQLGetDiagRec(), SQLGetInfo()
+ * 27-Nov-09 Benoy R Nair	For SQLTables(), SQLNumResultCols(), SQLFetch(), SQLGetData(), SQLDisconnect(), SQLFreeHandle()
  */
 package main
 
@@ -13,14 +14,13 @@ import "godbc"
 import "fmt"
 import "os"
 
-var env, dbc, stmt godbc.GS_HANDLE;
+var env, dbc, stmt * godbc.GS_HANDLE;
 
 func init()
 {
-	godbc.NULL_HANDLE.GS_AllocHandle ( godbc.GS_HANDLE_ENV, &env );
+	_, env = godbc.NULL_HANDLE.GS_AllocHandle ( godbc.GS_HANDLE_ENV );
 	env.GS_SetEnvAttr ( godbc.GS_ATTR_ODBC_VERSION, godbc.GS_OV_ODBC3, 0 );
-	env.GS_AllocHandle ( godbc.GS_HANDLE_DBC, &dbc );
-	dbc.GS_AllocHandle ( godbc.GS_HANDLE_STMT, &stmt );
+	_, dbc = env.GS_AllocHandle ( godbc.GS_HANDLE_DBC );
 }
 
 func main()
@@ -29,6 +29,9 @@ func main()
 	listDrivers();
 	connect();
 	testGetInfo();
+	createStmt();
+	listTables();
+	cleanup();
 }
 
 func listDataSources()
@@ -100,7 +103,7 @@ func connect()
 	else
 	{
 		fmt.Printf ( "Unable to connect. Check the login credentials provided in the code.\n" );
-		extractError ( "connect()", &dbc, godbc.GS_HANDLE_DBC );
+		extractError ( "connect()", dbc, godbc.GS_HANDLE_DBC );
 		os.Exit (1);
 	}
 }
@@ -143,6 +146,57 @@ func testGetInfo()
 	}
 }
 
+func createStmt()
+{
+	_, stmt = dbc.GS_AllocHandle ( godbc.GS_HANDLE_STMT );
+}
+
+func listTables()
+{
+	stmt.GS_Tables ( "", 0, "", 0, "", 0, "TABLE", godbc.GS_NTS );
+
+	_, columns := stmt.GS_NumResultCols();
+
+	fmt.Printf ( "Number of columns: %d\n", columns );
+
+	for row := 1;; row++
+	{
+		x := stmt.GS_Fetch();
+
+		if ! godbc.GS_Succeeded ( x )
+		{
+			break;
+		}
+
+		fmt.Printf ( "Row %d => ", row );
+
+		for i := 1; i <= columns; i++
+		{
+			ret, indicator, columnValue := stmt.GS_GetData_String ( i );
+
+			if godbc.GS_Succeeded ( ret )
+			{
+				if indicator == godbc.GS_NULL_DATA
+				{
+					columnValue = "NULL";
+				}
+
+				fmt.Printf ( "Col %d: \"%s\" ", i, columnValue );
+			}
+		}
+
+		fmt.Printf ( "\n" );
+	}
+}
+
+func cleanup()
+{
+	stmt.GS_FreeHandle ( godbc.GS_HANDLE_STMT );
+	dbc.GS_Disconnect();
+	dbc.GS_FreeHandle ( godbc.GS_HANDLE_DBC );
+	env.GS_FreeHandle ( godbc.GS_HANDLE_ENV );
+}
+
 func extractError ( function string
 	, handle * godbc.GS_HANDLE
 	, handleType int )
@@ -165,7 +219,6 @@ func extractError ( function string
 		}
 		else
 		{
-			fmt.Printf ( "unable to extract error\n" );
 			break;
 		}
 	}

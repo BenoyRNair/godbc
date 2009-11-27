@@ -6,8 +6,9 @@
  * 22-Nov-09 Benoy R Nair	First draft
  * 23-Nov-09 Benoy R Nair	For SQLDriverConnect()
  * 23-Nov-09 Benoy R Nair	For SQLGetDiagRec(), SQLGetInfo()
+ * 27-Nov-09 Benoy R Nair	For SQLTables(), SQLNumResultCols(), SQLFetch(), SQLGetData(), SQLDisconnect(), SQLFreeHandle()
  */
-package godbc 
+package godbc
 
 /*
 #include <stdio.h>
@@ -58,6 +59,12 @@ const
 	GS_GD_ANY_COLUMN = uint32 ( 1 );
 	GS_GD_ANY_ORDER = uint32 ( 2 );
 
+// use these to indicate string termination to some functions
+	GS_NTS = -3;
+
+// ret values
+	GS_NULL_DATA = -1;
+
 	BUFFER_SIZE = 256;
 )
 
@@ -66,13 +73,16 @@ var
 	NULL_HANDLE GS_HANDLE;
 )
 
-func ( inputHandle * GS_HANDLE ) GS_AllocHandle ( handleType int
-	, outputHandle * GS_HANDLE )
-	int
+func ( inputHandle * GS_HANDLE ) GS_AllocHandle ( handleType int )
+	( int, * GS_HANDLE )
 {
-	return ( int ( C.SQLAllocHandle ( C.SQLSMALLINT ( handleType )
+	var outputHandle * GS_HANDLE = new ( GS_HANDLE );
+
+	x := int ( C.SQLAllocHandle ( C.SQLSMALLINT ( handleType )
 		, unsafe.Pointer ( inputHandle.GsHandle )
-		, &outputHandle.GsHandle ) ) );
+		, &outputHandle.GsHandle ) );
+
+	return x, outputHandle;
 }
 
 func ( environmentHandle * GS_HANDLE ) GS_SetEnvAttr ( attribute int
@@ -234,6 +244,76 @@ func ( connectionHandle * GS_HANDLE ) GS_GetInfo_Int ( infoType int )
 		, &intValue ) );
 
 	return returnInt, int ( intValue );
+}
+
+func ( statementHandle * GS_HANDLE ) GS_Tables ( catalogName string
+	, nameLength1 int
+	, schemaName string
+	, nameLength2 int
+	, tableName string
+	, nameLength3 int
+	, tableType string
+	, nameLength4 int )
+	int
+{
+	return ( int ( C.GO_Tables ( unsafe.Pointer ( statementHandle.GsHandle )
+		, C.CString ( catalogName )
+		, C.SQLSMALLINT ( nameLength1 )
+		, C.CString ( schemaName )
+		, C.SQLSMALLINT ( nameLength2 )
+		, C.CString ( tableName )
+		, C.SQLSMALLINT ( nameLength3 )
+		, C.CString ( tableType )
+		, C.SQLSMALLINT ( nameLength4 ) ) ) );
+}
+
+func ( statementHandle * GS_HANDLE ) GS_NumResultCols()
+	( int, int )
+{
+	var columnCount C.SQLSMALLINT;
+
+	returnInt := int ( C.SQLNumResultCols ( unsafe.Pointer ( statementHandle.GsHandle )
+		, &columnCount ) );
+
+	return returnInt, int ( columnCount );
+}
+
+func ( statementHandle * GS_HANDLE ) GS_Fetch()
+	int
+{
+	return ( int ( C.SQLFetch ( unsafe.Pointer ( statementHandle.GsHandle ) ) ) );
+}
+
+func ( statementHandle * GS_HANDLE ) GS_GetData_String ( columnNumber int )
+	( int, int, string )
+{
+	var indicator C.SQLINTEGER;
+	buffer := ( * C.SQLCHAR ) ( C.calloc ( BUFFER_SIZE, 1 ) );
+
+	returnInt := int ( C.GO_GetData_String ( unsafe.Pointer ( statementHandle.GsHandle )
+		, C.SQLUSMALLINT ( columnNumber )
+		, buffer
+		, BUFFER_SIZE
+		, &indicator ) );
+
+	returnString := toStringTillNull ( buffer );
+
+	C.free ( unsafe.Pointer ( buffer ) );
+
+	return returnInt, int ( indicator ), returnString;
+}
+
+func ( connectionHandle * GS_HANDLE ) GS_Disconnect()
+	int
+{
+	return ( int ( C.SQLDisconnect ( unsafe.Pointer ( connectionHandle.GsHandle ) ) ) );
+}
+
+func ( inputHandle * GS_HANDLE ) GS_FreeHandle ( handleType int )
+	int
+{
+	return ( int ( C.SQLFreeHandle ( C.SQLSMALLINT ( handleType )
+		, unsafe.Pointer ( inputHandle.GsHandle ) ) ) );
 }
 
 func toStringByLength ( buf * C.SQLCHAR, length int )

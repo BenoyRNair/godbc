@@ -18,6 +18,8 @@ The program does the following:
 3. Connect to a data source
 4. Detail errors returned from the database
 5. Get database info/ properties
+6. Fetch and print the tables in the database
+7. Close database connections and free resources
 
 Todo
 1. Extend the go library to cover the entire ODBC specification.
